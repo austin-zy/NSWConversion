@@ -13,6 +13,7 @@ import fileinput
 from Tkinter import Tk
 from tkFileDialog import askopenfilename
 import csv
+import time
 
 
 def makestructure(filename):
@@ -50,7 +51,7 @@ def makestructure(filename):
         elif len(s)>25:
             conversation.append(s)  
     # Write into list of text(.txt) to be processed in the future
-    f = open('members.txt', "w")
+    f = open('users/members.txt', "w")
     for m in members:
         f.writelines(m+"\n")    
     f.close()
@@ -59,7 +60,7 @@ def makestructure(filename):
 
 def readmembers():
     # Get array from members.txt
-    f = open('members.txt')
+    f = open('users/members.txt')
     line=f.readlines()
     lines = []
     for l in line:
@@ -67,7 +68,7 @@ def readmembers():
     return lines
        
 def split(sentence):
-    # Split long strings with space to form arrays of words
+    # Split long strings with space to form arrays of words vector
     word = sentence.split(' ')
     return word
 
@@ -89,7 +90,7 @@ def replaceword(sentence,dict):
     i = 0  
     for w in word:
         for d in dict:
-            if w==d[0]:
+            if w==d[0].lower():
                 #print w+" is replaced by "+d[1]
                 word[i] = d[1]
         i = i+1
@@ -99,13 +100,13 @@ def replaceword(sentence,dict):
 
 def wordreplacement(sentence):
     # initialize dictionary
-    dict_abbr = openlib('abbr.csv')
-    dict_acro = openlib('acronym.csv')
-    dict_combined = openlib('combined.csv')
-    dict_english = openlib('english.csv')
-    dict_interjection = openlib('interjection.csv')
-    dict_misspelled = openlib('misspelled.csv')
-    dict_slang = openlib('slang.csv')    
+    dict_abbr = openlib('dictionary/abbr.csv')
+    dict_acro = openlib('dictionary/acronym.csv')
+    dict_combined = openlib('dictionary/combined.csv')
+    dict_english = openlib('dictionary/english.csv')
+    dict_interjection = openlib('dictionary/interjection.csv')
+    dict_misspelled = openlib('dictionary/misspelled.csv')
+    dict_slang = openlib('dictionary/slang.csv')
     #####################################
     #    Word Replacement Processing    #
     #####################################
@@ -139,9 +140,9 @@ def convertConversation(conversation):
     # initalize processedtext as empty array/tuple
     processedtext = []
     # Open txt for writing
-    f = open('conversation.txt','wb')
+    f = open('output/conversation.txt','wb')
     # Open csv for writing
-    with open('chat.csv', 'w') as csvfile:
+    with open('output/chat.csv', 'w') as csvfile:
         # Initialize header & CSV process
         fieldnames = ['user', 'message']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -158,15 +159,17 @@ def convertConversation(conversation):
                     if p[:len(m)]== m.lower():
                         user = p[:len(m)]
                         message = p[len(m):]
+                        if message[-11:]=="...see more":
+                            message = message[:-11]
                         break;
             # If user and message is not empty, write as usual as %user : %message format
             if not user == '' and not message=='':
-                writer.writerow({'user': user.title(), 'message': message})    
-                f.writelines(user.title()+ ": "+message+"\n\n")
+                writer.writerow({'user': user.title(), 'message': message.strip().capitalize()})
+                f.writelines(user.title()+ ": "+message.strip().capitalize()+"\n\n")
             # else if user is empty, regard as the message from previous user
             elif user=='' and not message=='':
-                writer.writerow({'user': user.title(), 'message': message})    
-                f.writelines("\t\t"+message+"\n\n")   
+                writer.writerow({'user': user.title(), 'message': message.strip().capitalize()})
+                f.writelines("\t\t"+message.strip().capitalize()+"\n\n")
             # else dont do anything
     f.close()
     # close filewiter here
@@ -175,6 +178,7 @@ def convertConversation(conversation):
 #                MAIN FUNCTION                     #
 ####################################################
 # HEADER
+print "---------------"
 print "NSW translator"
 print "---------------"
 print "File to perform processing"
@@ -187,6 +191,7 @@ filename = askopenfilename() # show an "Open" dialog box and return the path to 
 #####################################
 #           Preprocessing           #
 #####################################
+start_time = time.time()
 conversation = makestructure(filename)
 members = readmembers()
 #####################################
@@ -195,4 +200,5 @@ members = readmembers()
 convertConversation(conversation)
 print "CSV file done writed"
 print "Text file done writed"
-print "Process completed"                
+print "Process completed"
+print("--- %s seconds ---" % (time.time() - start_time))
